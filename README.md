@@ -183,9 +183,6 @@ rezvangate/
 4. به Branch خود Push کنید (`git push origin feature/amazing-feature`)
 5. یک Pull Request باز کنید
 
-## 📄 لایسنس
-
-این پروژه تحت لایسنس MIT منتشر شده است. برای اطلاعات بیشتر فایل [LICENSE](LICENSE) را ببینید.
 
 
 <p align="center">

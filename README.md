@@ -52,6 +52,14 @@
 
 ---
 
+## 📸 تصویر
+
+<p align="center">
+  <img src="screenshots/home.png" alt="صفحه اصلی RezvanGate" width="90%">
+</p>
+
+---
+
 <div dir="rtl">
 
 ## 📋 پیش‌نیازها

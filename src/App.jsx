@@ -147,8 +147,24 @@ function App() {
             {ipData && !loading && (
               <div className="ip-info-card">
                 <div className="ip-header">
-                  <div className="ip-display" dir="ltr">{ipData.ip}</div>
-                  <div className="ip-label">آدرس IP</div>
+                  <div className="ip-display" dir="ltr">
+                    {ipData.ipv4 || ipData.ip}
+                  </div>
+                  <div className="ip-label">
+                    آدرس IP {ipData.ipv4 ? '(IPv4)' : ipData.ipType === 'IPv4' ? '(IPv4)' : '(IPv6)'}
+                  </div>
+                  {ipData.ipv6 && (
+                    <div className="ip-secondary" dir="ltr">
+                      <span className="ip-secondary-label">IPv6: </span>
+                      <span className="ip-secondary-value">{ipData.ipv6}</span>
+                    </div>
+                  )}
+                  {ipData.ipType === 'IPv6' && !ipData.ipv6 && (
+                    <div className="ip-secondary" dir="ltr">
+                      <span className="ip-secondary-label">نوع: </span>
+                      <span className="ip-secondary-value">IPv6</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="ip-info-grid">

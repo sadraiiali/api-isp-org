@@ -64,47 +64,82 @@ setInterval(() => {
   }
 }, RATE_LIMIT_WINDOW);
 
-// Function to get IP info from ip-api.com
-async function getIPInfo(ip) {
+// Function to get IP info from ipwho.is (free HTTPS API)
+async function getIPInfo(ip, includeAlternate = false) {
   try {
-    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`);
+    const url = ip ? `https://ipwho.is/${ip}` : 'https://ipwho.is/';
+    const response = await fetch(url);
     const data = await response.json();
     
-    if (data.status === 'fail') {
+    if (!data.success) {
       return { error: data.message || 'Invalid IP address' };
     }
     
-    return {
-      ip: data.query,
+    const result = {
+      ip: data.ip,
+      ipType: data.type || (data.ip.includes(':') ? 'IPv6' : 'IPv4'),
       country: data.country,
-      countryCode: data.countryCode,
-      region: data.regionName,
-      regionCode: data.region,
+      countryCode: data.country_code,
+      region: data.region,
+      regionCode: data.region_code,
       city: data.city,
-      postalCode: data.zip,
-      latitude: data.lat,
-      longitude: data.lon,
-      timezone: data.timezone,
-      isp: data.isp,
-      organization: data.org,
-      asName: data.as
+      postalCode: data.postal,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      timezone: data.timezone?.id || data.timezone,
+      isp: data.connection?.isp || 'Unknown',
+      organization: data.connection?.org || 'Unknown',
+      asName: data.connection?.asn ? `AS${data.connection.asn} ${data.connection.org}` : 'Unknown'
     };
+
+    return result;
   } catch (error) {
     return { error: 'Failed to fetch IP information' };
   }
 }
 
 // API endpoint for IP lookup
-app.get('/api/ip', async (req, res) => {
-  // Get client IP
-  const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-  const ip = clientIP.replace('::ffff:', '').replace('::1', '127.0.0.1');
+app.get('/ip', async (req, res) => {
+  // Get client IP - prioritize Cloudflare header
+  const cfIP = req.headers['cf-connecting-ip'];
+  const xRealIP = req.headers['x-real-ip'];
+  const xForwardedFor = req.headers['x-forwarded-for'];
   
-  const info = await getIPInfo(ip === '127.0.0.1' ? '' : ip);
+  // Debug log
+  console.log('Headers:', { cfIP, xRealIP, xForwardedFor });
+  
+  let clientIP = cfIP || xRealIP || (xForwardedFor ? xForwardedFor.split(',')[0].trim() : '') || req.socket.remoteAddress || '';
+  
+  // Clean up IP - handle IPv4-mapped IPv6 and localhost
+  clientIP = clientIP.replace('::ffff:', '');
+  if (clientIP === '::1' || clientIP === '127.0.0.1') {
+    clientIP = '';
+  }
+  
+  console.log('Final IP:', clientIP);
+  
+  // Check if IP is IPv6
+  const isIPv6 = clientIP.includes(':');
+  
+  // Get IP info
+  const info = await getIPInfo(clientIP);
+  
+  // If it's IPv6, set ipv6 field and try to show both
+  if (isIPv6 && !info.error) {
+    info.ipv6 = clientIP;
+    info.ipType = 'IPv6';
+    
+    // For display, we keep the IPv6 as main IP
+    // The frontend will show IPv4 if available or IPv6
+  } else if (!info.error) {
+    info.ipv4 = clientIP;
+    info.ipType = 'IPv4';
+  }
+  
   res.json(info);
 });
 
-app.get('/api/ip/:ip', async (req, res) => {
+app.get('/ip/:ip', async (req, res) => {
   const { ip } = req.params;
   
   // Validate IP format
@@ -120,14 +155,15 @@ app.get('/api/ip/:ip', async (req, res) => {
 });
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.listen(PORT, () => {
   console.log(`API Server running on http://localhost:${PORT}`);
+  console.log(`Using ipwho.is API (HTTPS)`);
   console.log(`\nAPI Endpoints:`);
-  console.log(`  GET /api/ip       - Get your IP information`);
-  console.log(`  GET /api/ip/:ip   - Get information for a specific IP`);
-  console.log(`  GET /api/health   - Health check`);
+  console.log(`  GET /ip       - Get your IP information`);
+  console.log(`  GET /ip/:ip   - Get information for a specific IP`);
+  console.log(`  GET /health   - Health check`);
 });

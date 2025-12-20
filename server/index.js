@@ -6,12 +6,37 @@ import readline from 'readline';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import maxmind from 'maxmind';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// --- Swagger Configuration ---
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'RezvanGate IP API',
+      version: '3.0.0',
+      description: 'Advanced IP Geolocation and Proxy Detection API',
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+        description: 'Local development server',
+      },
+    ],
+  },
+  apis: ['./server/index.js'], // Path to the API docs
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Database Configuration ---
 const dataDir = join(__dirname, '..', 'data');
@@ -300,20 +325,117 @@ const handleSpecificIP = (req, res) => {
   res.json(getIPInfo(req.params.ip));
 };
 
-// Upstream paths
+/**
+ * @openapi
+ * /ip:
+ *   get:
+ *     summary: Get information about your own IP address
+ *     tags: [IP Lookup]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 app.get('/ip', handleCurrentIP);
+
+/**
+ * @openapi
+ * /ip/{ip}:
+ *   get:
+ *     summary: Get information about a specific IP address
+ *     tags: [IP Lookup]
+ *     parameters:
+ *       - in: path
+ *         name: ip
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The IP address to lookup
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 app.get('/ip/:ip', handleSpecificIP);
+
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     tags: [Utility]
+ *     responses:
+ *       200:
+ *         description: Server is healthy
+ */
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+/**
+ * @openapi
+ * /info:
+ *   get:
+ *     summary: API version and database information
+ *     tags: [Utility]
+ *     responses:
+ *       200:
+ *         description: API info
+ */
 app.get('/info', (req, res) => res.json({
   version: '3.0.0-merged',
   databases: ['MaxMind', 'IP2Location', 'IP2Proxy'],
   supportedTypes: ['IPv4', 'IPv6']
 }));
 
-// Legacy/API paths
+/**
+ * @openapi
+ * /api/ip:
+ *   get:
+ *     summary: Legacy path for current IP lookup
+ *     tags: [Legacy]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 app.get('/api/ip', handleCurrentIP);
+
+/**
+ * @openapi
+ * /api/ip/{ip}:
+ *   get:
+ *     summary: Legacy path for specific IP lookup
+ *     tags: [Legacy]
+ *     parameters:
+ *       - in: path
+ *         name: ip
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 app.get('/api/ip/:ip', handleSpecificIP);
+
+/**
+ * @openapi
+ * /api/health:
+ *   get:
+ *     summary: Legacy health check
+ *     tags: [Legacy]
+ *     responses:
+ *       200:
+ *         description: OK
+ */
 app.get('/api/health', (req, res) => res.json({ status: 'ok', merged: true }));
+
+/**
+ * @openapi
+ * /api/attribution:
+ *   get:
+ *     summary: Legacy attribution info
+ *     tags: [Legacy]
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 app.get('/api/attribution', (req, res) => res.json({
   attribution: 'Contains data from MaxMind GeoLite2, IP2Location LITE, and IP2Proxy LITE.',
   links: ['https://www.maxmind.com', 'https://lite.ip2location.com']

@@ -272,6 +272,39 @@ function App() {
                   </p>
                 </div>
               </div>
+
+              {/* Sample Response */}
+              <div className="api-endpoint">
+                <div className="endpoint-header">
+                  <span className="method">JSON</span>
+                  <span className="endpoint-url">نمونه پاسخ ادغام شده (واقعی)</span>
+                </div>
+                <div className="endpoint-body">
+                  <p className="endpoint-desc">
+                    نمونه پاسخ دریافتی از سرور برای آدرس 8.8.8.8 که شامل تمامی فیلدهاست:
+                  </p>
+                  <div className="code-block">
+                    <pre dir="ltr">{JSON.stringify({
+                      "ip": "8.8.8.8",
+                      "ipType": "IPv4",
+                      "ipv4": "8.8.8.8",
+                      "country": "United States",
+                      "countryCode": "US",
+                      "region": "California",
+                      "city": "Mountain View",
+                      "latitude": 37.751,
+                      "longitude": -97.822,
+                      "timezone": "America/Chicago",
+                      "isp": "GOOGLE",
+                      "organization": "GOOGLE",
+                      "asn": 15169,
+                      "asName": "AS15169 GOOGLE",
+                      "source": "MaxMind + AS + IP2Location",
+                      "attribution": "Contains data from MaxMind GeoLite2, IP2Location LITE, and IP2Proxy LITE."
+                    }, null, 2)}</pre>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         )}
